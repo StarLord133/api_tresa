@@ -1,3 +1,4 @@
+require('dotenv').config(); // <--- Agrega esto al mero principio
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors'); // Para evitar bloqueos si accedes desde web
@@ -7,10 +8,14 @@ app.use(cors());
 
 // --- CONFIGURACIÓN DE LA BASE DE DATOS ---
 const db = mysql.createConnection({
-    host: 'mysql-2288c034-proyecto130607.b.aivencloud.com',
-    user: 'avnadmin',      // Tu usuario de SQL
-    password: 'AVNS_dPJpPMWi0fA73thaJ5j',      // Tu contraseña de SQL
-    database: 'defaultdb'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
+    ssl: {
+        rejectUnauthorized: false // Necesario para Aiven en algunos casos
+    }
 });
 
 db.connect((err) => {

@@ -51,7 +51,9 @@ app.get('/api/log', (req, res) => {
 });
 
 // Iniciar servidor
-const PORT = 3000;
-app.listen(PORT, () => {
+// Busca la parte final de tu código y cámbiala por esto:
+
+const PORT = process.env.PORT || 3000; // <--- CAMBIO CLAVE: Usa el puerto de Render si existe
+app.listen(PORT, '0.0.0.0', () => {    // <--- CAMBIO CLAVE: '0.0.0.0' asegura que escuche hacia afuera
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });

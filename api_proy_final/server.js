@@ -7,16 +7,23 @@ const app = express();
 app.use(cors());
 
 // --- CONFIGURACIÓN DE LA BASE DE DATOS ---
-const db = mysql.createConnection({
+// --- CONFIGURACIÓN DE LA BASE DE DATOS (MODO POOL) ---
+const db = mysql.createPool({ // <--- CAMBIO AQUÍ: createPool en lugar de createConnection
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
     ssl: {
-        rejectUnauthorized: false // Necesario para Aiven en algunos casos
+        rejectUnauthorized: false
     }
 });
+
+// Nota: Con pool ya no necesitas llamar a db.connect(), lo hace solo.
+console.log('Configuración de Pool MySQL lista');
 
 db.connect((err) => {
     if (err) {

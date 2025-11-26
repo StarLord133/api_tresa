@@ -25,13 +25,6 @@ const db = mysql.createPool({ // <--- CAMBIO AQUÍ: createPool en lugar de creat
 // Nota: Con pool ya no necesitas llamar a db.connect(), lo hace solo.
 console.log('Configuración de Pool MySQL lista');
 
-db.connect((err) => {
-    if (err) {
-        console.error('Error conectando a MySQL:', err);
-        return;
-    }
-    console.log('Conectado a MySQL');
-});
 
 // --- ENDPOINT PARA RECIBIR DATOS DEL ESP8266 ---
 // El ESP enviará los datos en la URL: /api/log?temp=XX&hum=YY&dist=ZZ&mov=A

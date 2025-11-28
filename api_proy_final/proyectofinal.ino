@@ -23,10 +23,16 @@ const int httpsPort = 443;
 #define PIN_ECHO 4     
 
 #define PIN_PIR 14      
+#define PIN_LED 12 // D6
 
 DHT dht(PIN_DHT, DHTTYPE);
 WiFiClientSecure client; // Cliente seguro para HTTPS
 HTTPClient http;
+
+// --- VARIABLES DE TIEMPO ---
+unsigned long lastLogTime = 0;
+const long logInterval = 30000; // Enviar datos a la BD cada 30 segundos
+const long ledInterval = 500;   // Checar estado del LED cada 0.5 segundos
 
 void setup() {
   Serial.begin(115200);
@@ -35,6 +41,7 @@ void setup() {
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
   pinMode(PIN_PIR, INPUT);
+  pinMode(PIN_LED, OUTPUT);
   
   dht.begin();
 
@@ -53,7 +60,26 @@ void setup() {
   client.setInsecure(); 
 }
 
-void loop() {
+void checkLedStatus() {
+  if (WiFi.status() == WL_CONNECTED) {
+    String url = "https://" + String(host) + "/api/led";
+    http.begin(client, url);
+    int httpCode = http.GET();
+    
+    if (httpCode > 0) {
+       String payload = http.getString();
+       // Buscamos "led":true o "led":false en la respuesta JSON
+       if (payload.indexOf("\"led\":true") > 0) {
+         digitalWrite(PIN_LED, HIGH); 
+       } else if (payload.indexOf("\"led\":false") > 0) {
+         digitalWrite(PIN_LED, LOW);
+       }
+    }
+    http.end();
+  }
+}
+
+void sendSensorData() {
   // 1. LEER TEMPERATURA Y HUMEDAD
   float h = dht.readHumidity();
   float t = dht.readTemperature();
@@ -75,18 +101,12 @@ void loop() {
   // Validar lecturas del DHT
   if (isnan(h) || isnan(t)) {
     Serial.println("Error leyendo DHT!");
-    delay(2000); 
     return;
   }
 
   // 4. CONSTRUIR LA URL Y ENVIAR A RENDER
   if (WiFi.status() == WL_CONNECTED) {
-    
-    // Construimos la URL con HTTPS y el host correcto
-    // Nota: Convertimos 'host' a String para poder concatenar
     String url = "https://" + String(host) + "/api/log";
-    
-    // Añadir parámetros
     String fullRequest = url + "?temp=" + String(t) + 
                                "&hum=" + String(h) + 
                                "&dist=" + String(distancia) + 
@@ -95,23 +115,32 @@ void loop() {
     Serial.print("Enviando a Render: ");
     Serial.println(fullRequest);
 
-    // Iniciamos la conexión segura usando el cliente 'client' que ya configuramos con setInsecure()
     http.begin(client, fullRequest); 
-    
     int httpCode = http.GET();       
 
     if (httpCode > 0) {
-      Serial.printf("[HTTPS] Codigo: %d\n", httpCode);
-      String payload = http.getString();
-      Serial.println("Respuesta del servidor: " + payload);
+      Serial.printf("[HTTPS] Log guardado. Codigo: %d\n", httpCode);
     } else {
-      Serial.printf("[HTTPS] Fallo, error: %s\n", http.errorToString(httpCode).c_str());
+      Serial.printf("[HTTPS] Fallo log, error: %s\n", http.errorToString(httpCode).c_str());
     }
     http.end();
-    
-  } else {
-    Serial.println("WiFi Desconectado");
+  }
+}
+
+void loop() {
+  unsigned long currentMillis = millis();
+
+  // --- TAREA RÁPIDA: CHECAR LED ---
+  // Hacemos esto en cada vuelta del loop, con un pequeño delay manual si se desea, 
+  // o simplemente dejamos que corra lo más rápido posible.
+  // Para no saturar, usaremos un delay pequeño al final del loop.
+  checkLedStatus();
+
+  // --- TAREA LENTA: ENVIAR DATOS ---
+  if (currentMillis - lastLogTime >= logInterval) {
+    lastLogTime = currentMillis;
+    sendSensorData();
   }
 
-  delay(60000); // Enviar datos cada 5 segundos
+  delay(500); // Esperar 0.5s antes de volver a checar el LED
 }

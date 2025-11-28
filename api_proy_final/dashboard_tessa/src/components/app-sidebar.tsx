@@ -1,5 +1,6 @@
 import * as React from "react"
 import {
+  IconBolt,
   IconCamera,
   IconChartBar,
   IconDashboard,
@@ -40,8 +41,13 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
+    },
+    {
+      title: "Acciones",
+      url: "/dashboard/actions",
+      icon: IconBolt,
     },
     {
       title: "Lifecycle",

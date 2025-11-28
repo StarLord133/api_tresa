@@ -39,13 +39,26 @@ app.get('/api/log', (req, res) => {
     }
 
     const query = 'INSERT INTO registros (temperatura, humedad, distancia, movimiento) VALUES (?, ?, ?, ?)';
-    
+
     db.query(query, [temp, hum, dist, mov], (err, result) => {
         if (err) {
             console.error(err);
             res.status(500).send('Error al guardar en BD');
         } else {
             res.send('Datos guardados correctamente');
+        }
+    });
+});
+
+// --- ENDPOINT PARA OBTENER DATOS ---
+app.get('/api/data', (req, res) => {
+    const query = 'SELECT * FROM registros ORDER BY id DESC LIMIT 100';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error al obtener datos');
+        } else {
+            res.json(results);
         }
     });
 });

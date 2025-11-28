@@ -45,6 +45,26 @@ app.get('/api/log', (req, res) => {
             console.error(err);
             res.status(500).send('Error al guardar en BD');
         } else {
+            // --- LIMPIEZA DE DATOS ANTIGUOS ---
+            // Mantenemos solo los ultimos 100 registros
+            const cleanupQuery = `
+                DELETE FROM registros 
+                WHERE id NOT IN (
+                    SELECT id FROM (
+                        SELECT id FROM registros ORDER BY id DESC LIMIT 100
+                    ) sub
+                )
+            `;
+
+            db.query(cleanupQuery, (cleanupErr) => {
+                if (cleanupErr) {
+                    console.error("Error limpiando registros antiguos:", cleanupErr);
+                    // No fallamos la petición principal, solo logueamos el error
+                } else {
+                    console.log("Limpieza de registros completada");
+                }
+            });
+
             // Respondemos con el estado del LED para que el ESP lo lea
             res.json({
                 status: 'ok',

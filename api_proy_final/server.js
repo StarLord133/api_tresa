@@ -1,14 +1,14 @@
-require('dotenv').config(); // <--- Agrega esto al mero principio
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
-const cors = require('cors'); // Para evitar bloqueos si accedes desde web
+const cors = require('cors');
 
 const app = express();
 app.use(cors());
+app.use(express.json()); // Important for parsing JSON body in POST requests
 
-// --- CONFIGURACIÓN DE LA BASE DE DATOS ---
 // --- CONFIGURACIÓN DE LA BASE DE DATOS (MODO POOL) ---
-const db = mysql.createPool({ // <--- CAMBIO AQUÍ: createPool en lugar de createConnection
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -22,9 +22,9 @@ const db = mysql.createPool({ // <--- CAMBIO AQUÍ: createPool en lugar de creat
     }
 });
 
-// Nota: Con pool ya no necesitas llamar a db.connect(), lo hace solo.
 console.log('Configuración de Pool MySQL lista');
 
+let ledState = false; // Estado del LED (false = apagado, true = encendido)
 
 // --- ENDPOINT PARA RECIBIR DATOS DEL ESP8266 ---
 // El ESP enviará los datos en la URL: /api/log?temp=XX&hum=YY&dist=ZZ&mov=A
@@ -45,7 +45,12 @@ app.get('/api/log', (req, res) => {
             console.error(err);
             res.status(500).send('Error al guardar en BD');
         } else {
-            res.send('Datos guardados correctamente');
+            // Respondemos con el estado del LED para que el ESP lo lea
+            res.json({
+                status: 'ok',
+                message: 'Datos guardados correctamente',
+                led: ledState
+            });
         }
     });
 });
@@ -63,10 +68,24 @@ app.get('/api/data', (req, res) => {
     });
 });
 
-// Iniciar servidor
-// Busca la parte final de tu código y cámbiala por esto:
+// --- ENDPOINT PARA CONTROLAR EL LED DESDE EL DASHBOARD ---
+app.post('/api/led', (req, res) => {
+    const { state } = req.body; // Esperamos { "state": true/false }
+    if (typeof state === 'boolean') {
+        ledState = state;
+        console.log(`Estado del LED actualizado a: ${ledState}`);
+        res.json({ status: 'ok', led: ledState });
+    } else {
+        res.status(400).json({ error: 'Formato inválido. Se espera { "state": boolean }' });
+    }
+});
 
-const PORT = process.env.PORT || 3000; // <--- CAMBIO CLAVE: Usa el puerto de Render si existe
-app.listen(PORT, '0.0.0.0', () => {    // <--- CAMBIO CLAVE: '0.0.0.0' asegura que escuche hacia afuera
+// --- ENDPOINT PARA OBTENER ESTADO DEL LED (DASHBOARD) ---
+app.get('/api/led', (req, res) => {
+    res.json({ led: ledState });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });

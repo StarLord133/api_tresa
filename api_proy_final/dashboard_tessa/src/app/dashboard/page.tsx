@@ -19,7 +19,7 @@ export default function Page() {
             try {
                 // TODO: Change this URL to your Render backend URL if running in production
                 // e.g., https://your-app.onrender.com/api/data
-                const response = await fetch('http://localhost:3000/api/data')
+                const response = await fetch('https://api-tresa.onrender.com/api/data')
                 if (!response.ok) {
                     throw new Error('Network response was not ok')
                 }

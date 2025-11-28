@@ -18,7 +18,7 @@ export default function ActionsPage() {
 
     // Fetch initial state
     React.useEffect(() => {
-        fetch('http://localhost:3000/api/led')
+        fetch('https://api-tresa.onrender.com/api/led')
             .then(res => res.json())
             .then(data => setLedState(data.led))
             .catch(err => console.error("Error fetching LED state:", err))
@@ -28,7 +28,7 @@ export default function ActionsPage() {
         setLoading(true)
         const newState = !ledState
         try {
-            const response = await fetch('http://localhost:3000/api/led', {
+            const response = await fetch('https://api-tresa.onrender.com/api/led', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

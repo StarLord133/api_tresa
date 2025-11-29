@@ -26,7 +26,7 @@ export interface SensorData {
   temperatura: number
   humedad: number
   distancia: number
-  movimiento: number
+
   fecha?: string
 }
 
@@ -47,11 +47,7 @@ const columns: ColumnDef<SensorData>[] = [
     accessorKey: "distancia",
     header: "Distancia (cm)",
   },
-  {
-    accessorKey: "movimiento",
-    header: "Movimiento",
-    cell: ({ row }) => (row.original.movimiento ? "Sí" : "No"),
-  },
+
   {
     accessorKey: "fecha",
     header: "Fecha",

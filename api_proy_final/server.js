@@ -27,20 +27,20 @@ console.log('Configuración de Pool MySQL lista');
 let ledState = false; // Estado del LED (false = apagado, true = encendido)
 
 // --- ENDPOINT PARA RECIBIR DATOS DEL ESP8266 ---
-// El ESP enviará los datos en la URL: /api/log?temp=XX&hum=YY&dist=ZZ&mov=A
+// El ESP enviará los datos en la URL: /api/log?temp=XX&hum=YY&dist=ZZ
 app.get('/api/log', (req, res) => {
     // Desestructuramos los datos que vienen en la URL
-    const { temp, hum, dist, mov } = req.query;
+    const { temp, hum, dist } = req.query;
 
-    console.log(`Recibido -> Temp: ${temp}, Hum: ${hum}, Dist: ${dist}, Mov: ${mov}`);
+    console.log(`Recibido -> Temp: ${temp}, Hum: ${hum}, Dist: ${dist}`);
 
-    if (!temp || !hum || !dist || !mov) {
+    if (!temp || !hum || !dist) {
         return res.status(400).send('Faltan datos');
     }
 
-    const query = 'INSERT INTO registros (temperatura, humedad, distancia, movimiento) VALUES (?, ?, ?, ?)';
+    const query = 'INSERT INTO registros (temperatura, humedad, distancia) VALUES (?, ?, ?)';
 
-    db.query(query, [temp, hum, dist, mov], (err, result) => {
+    db.query(query, [temp, hum, dist], (err, result) => {
         if (err) {
             console.error(err);
             res.status(500).send('Error al guardar en BD');
@@ -84,6 +84,23 @@ app.get('/api/data', (req, res) => {
             res.status(500).send('Error al obtener datos');
         } else {
             res.json(results);
+        }
+    });
+});
+
+// --- ENDPOINT PARA OBTENER EL ULTIMO REGISTRO (PARA EL ESP ACTUADOR) ---
+app.get('/api/latest', (req, res) => {
+    const query = 'SELECT * FROM registros ORDER BY id DESC LIMIT 1';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error al obtener datos');
+        } else {
+            if (results.length > 0) {
+                res.json(results[0]);
+            } else {
+                res.json({}); // Retornar objeto vacio si no hay datos
+            }
         }
     });
 });

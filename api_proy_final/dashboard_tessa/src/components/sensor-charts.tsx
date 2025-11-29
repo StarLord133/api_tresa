@@ -21,7 +21,7 @@ export interface SensorData {
     temperatura: number
     humedad: number
     distancia: number
-    movimiento: number
+
     fecha?: string
 }
 

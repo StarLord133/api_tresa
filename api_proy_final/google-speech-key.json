@@ -1,0 +1,3 @@
+{
+  "note": "Credentials have been moved to .env variable GOOGLE_CLOUD_CREDENTIALS"
+}

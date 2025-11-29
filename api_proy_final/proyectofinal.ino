@@ -22,7 +22,7 @@ const int httpsPort = 443;
 #define PIN_TRIG 5     
 #define PIN_ECHO 4     
 
-#define PIN_PIR 14      
+
 #define PIN_LED 12 // D6
 
 DHT dht(PIN_DHT, DHTTYPE);
@@ -40,7 +40,7 @@ void setup() {
   // Configurar pines
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
-  pinMode(PIN_PIR, INPUT);
+
   pinMode(PIN_LED, OUTPUT);
   
   dht.begin();
@@ -95,8 +95,7 @@ void sendSensorData() {
   float distancia = duration * 0.034 / 2; 
   if (duration == 0) distancia = 0; 
 
-  // 3. LEER PIR (Movimiento)
-  int movimiento = digitalRead(PIN_PIR); 
+
 
   // Validar lecturas del DHT
   if (isnan(h) || isnan(t)) {
@@ -109,8 +108,7 @@ void sendSensorData() {
     String url = "https://" + String(host) + "/api/log";
     String fullRequest = url + "?temp=" + String(t) + 
                                "&hum=" + String(h) + 
-                               "&dist=" + String(distancia) + 
-                               "&mov=" + String(movimiento);
+                               "&dist=" + String(distancia);
 
     Serial.print("Enviando a Render: ");
     Serial.println(fullRequest);

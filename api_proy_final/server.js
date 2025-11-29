@@ -24,6 +24,21 @@ const db = mysql.createPool({
 
 console.log('Configuración de Pool MySQL lista');
 
+// Crear tabla de grabaciones si no existe
+const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS grabaciones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        archivo_url VARCHAR(255),
+        transcripcion TEXT
+    )
+`;
+
+db.query(createTableQuery, (err) => {
+    if (err) console.error("Error creando tabla grabaciones:", err);
+    else console.log("Tabla 'grabaciones' verificada/creada");
+});
+
 let ledState = false; // Estado del LED (false = apagado, true = encendido)
 
 // --- ENDPOINT PARA RECIBIR DATOS DEL ESP8266 ---
@@ -115,6 +130,33 @@ app.post('/api/led', (req, res) => {
     } else {
         res.status(400).json({ error: 'Formato inválido. Se espera { "state": boolean }' });
     }
+});
+
+// --- ENDPOINT PARA GUARDAR GRABACIÓN (Desde Python) ---
+app.post('/api/recordings', (req, res) => {
+    const { archivo_url, transcripcion } = req.body;
+    const query = 'INSERT INTO grabaciones (archivo_url, transcripcion) VALUES (?, ?)';
+    db.query(query, [archivo_url, transcripcion], (err, result) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error guardando grabación');
+        } else {
+            res.json({ status: 'ok', id: result.insertId });
+        }
+    });
+});
+
+// --- ENDPOINT PARA LISTAR GRABACIONES (Para el Dashboard) ---
+app.get('/api/recordings', (req, res) => {
+    const query = 'SELECT * FROM grabaciones ORDER BY id DESC LIMIT 50';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send('Error obteniendo grabaciones');
+        } else {
+            res.json(results);
+        }
+    });
 });
 
 // --- ENDPOINT PARA OBTENER ESTADO DEL LED (DASHBOARD) ---

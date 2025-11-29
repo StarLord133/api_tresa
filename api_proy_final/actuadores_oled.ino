@@ -30,7 +30,8 @@ void setup() {
   
   // Inicializar OLED
   // D2 (SDA) y D1 (SCL) son los pines I2C por defecto en NodeMCU, pero Wire.begin(D2, D1) lo asegura
-  Wire.begin(D2, D1); 
+  // D2 (SDA) = GPIO 4, D1 (SCL) = GPIO 5
+  Wire.begin(4, 5); 
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("Error: no se pudo inicializar la OLED SSD1306"));

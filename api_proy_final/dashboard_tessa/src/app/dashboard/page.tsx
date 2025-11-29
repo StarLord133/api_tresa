@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
+import { RecordingsTable } from "@/components/recordings-table"
+
 import { DataTable, type SensorData } from "@/components/data-table"
 import { SensorCharts } from "@/components/sensor-charts"
 import { SiteHeader } from "@/components/site-header"
@@ -60,6 +62,10 @@ export default function Page() {
                                 <>
                                     <SensorCharts data={data} />
                                     <DataTable data={data} />
+                                    <div className="mt-8">
+                                        <h2 className="text-xl font-bold mb-4">Grabaciones de Voz</h2>
+                                        <RecordingsTable />
+                                    </div>
                                 </>
                             )}
                         </div>

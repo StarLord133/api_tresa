@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Servo.h>
 
 // --- CREDENCIALES WIFI ---
 const char* ssid = "Tec-IoT"; 
@@ -19,17 +20,31 @@ const int httpsPort = 443;
 #define OLED_RESET   -1    
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// --- CONFIGURACIÓN SERVOS ---
+// Pines reasignados a D5-D8 como solicitó el usuario
+const int servoPin1 = 14; // D5 (GPIO 14)
+const int servoPin2 = 12; // D6 (GPIO 12)
+const int servoPin3 = 13; // D7 (GPIO 13)
+const int servoPin4 = 15; // D8 (GPIO 15) - Nota: Debe estar LOW al arrancar
+
+Servo servo1;
+Servo servo2;
+Servo servo3;
+Servo servo4;
+
 WiFiClientSecure client;
 HTTPClient http;
 
 unsigned long lastCheckTime = 0;
 const long checkInterval = 5000; // Consultar cada 5 segundos
 
+// Variables globales para lógica de servos
+int currentDistance = 0;
+
 void setup() {
   Serial.begin(115200);
   
   // Inicializar OLED
-  // D2 (SDA) y D1 (SCL) son los pines I2C por defecto en NodeMCU, pero Wire.begin(D2, D1) lo asegura
   // D2 (SDA) = GPIO 4, D1 (SCL) = GPIO 5
   Wire.begin(4, 5); 
 
@@ -44,6 +59,15 @@ void setup() {
   display.setCursor(0, 0);
   display.println("Iniciando...");
   display.display();
+
+  // Inicializar Servos
+  servo1.attach(servoPin1);
+  servo2.attach(servoPin2);
+  servo3.attach(servoPin3);
+  servo4.attach(servoPin4);
+
+  // Posición inicial
+  parar();
 
   // Conectar WiFi
   WiFi.begin(ssid, password);
@@ -85,6 +109,31 @@ String getValue(String data, String key) {
   return data.substring(start, end);
 }
 
+// Patrón de caminata
+void caminar() {
+  // Paso 1
+  servo1.write(20);
+  servo2.write(180);
+  servo3.write(20);
+  servo4.write(180);
+  delay(500); // Reducido a 500ms para más fluidez
+
+  // Paso 2 (Invertido para generar movimiento)
+  servo1.write(160);
+  servo2.write(0);
+  servo3.write(160);
+  servo4.write(0);
+  delay(500);
+}
+
+// Detener servos en posición neutral
+void parar() {
+  servo1.write(90);
+  servo2.write(90);
+  servo3.write(90);
+  servo4.write(90);
+}
+
 void getAndDisplayData() {
   if (WiFi.status() == WL_CONNECTED) {
     String url = "https://" + String(host) + "/api/latest";
@@ -103,6 +152,11 @@ void getAndDisplayData() {
       String tempStr = getValue(payload, "temperatura");
       String humStr = getValue(payload, "humedad");
       String distStr = getValue(payload, "distancia");
+
+      // Actualizar variable global de distancia para los servos
+      if (distStr != "") {
+        currentDistance = distStr.toInt();
+      }
 
       // Mostrar en OLED
       display.clearDisplay();
@@ -153,8 +207,19 @@ void getAndDisplayData() {
 void loop() {
   unsigned long currentMillis = millis();
 
+  // Consultar API cada 5 segundos
   if (currentMillis - lastCheckTime >= checkInterval) {
     lastCheckTime = currentMillis;
     getAndDisplayData();
+  }
+
+  // Lógica de Servos (se ejecuta continuamente, pero depende de currentDistance)
+  // Nota: 'caminar' tiene delays bloqueantes (2 segundos), esto afectará la frecuencia de actualización de la pantalla
+  // Si la distancia está en rango, caminará un ciclo y luego volverá a checar
+  
+  if (currentDistance >= 50 && currentDistance <= 85) {
+    caminar();     // Camina si el objeto está ENTRE 50 y 85 cm
+  } else {
+    parar();       // Fuera del rango → se detiene
   }
 }

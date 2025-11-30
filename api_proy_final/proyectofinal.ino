@@ -12,16 +12,11 @@ const char* host = "api-tresa.onrender.com";
 const int httpsPort = 443; 
 
 // --- PINES Y SENSORES (GPIOs) ---
-// GPIO 0 = D3
-// GPIO 5 = D1
-// GPIO 4 = D2
-// GPIO 14 = D5
 #define PIN_DHT 0      
 #define DHTTYPE DHT11
 
 #define PIN_TRIG 5     
 #define PIN_ECHO 4     
-
 
 #define PIN_LED 12 // D6
 
@@ -30,9 +25,14 @@ WiFiClientSecure client; // Cliente seguro para HTTPS
 HTTPClient http;
 
 // --- VARIABLES DE TIEMPO ---
-unsigned long lastLogTime = 0;
-const long logInterval = 30000; // Enviar datos a la BD cada 30 segundos
-const long ledInterval = 500;   // Checar estado del LED cada 0.5 segundos
+unsigned long lastDHTTime = 0;
+unsigned long lastDistTime = 0;
+const long dhtInterval = 30000; // Leer DHT cada 30 segundos
+const long distInterval = 5000; // Leer Distancia y enviar datos cada 5 segundos
+
+// Variables para almacenar últimos valores válidos
+float lastTemp = 0.0;
+float lastHum = 0.0;
 
 void setup() {
   Serial.begin(115200);
@@ -40,7 +40,6 @@ void setup() {
   // Configurar pines
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
-
   pinMode(PIN_LED, OUTPUT);
   
   dht.begin();
@@ -56,8 +55,16 @@ void setup() {
   Serial.print("IP: "); Serial.println(WiFi.localIP());
 
   // --- IMPORTANTE PARA RENDER ---
-  // Le dice al ESP que confíe en el certificado SSL de Render sin validarlo
   client.setInsecure(); 
+
+  // Lectura inicial del DHT para tener datos válidos desde el arranque
+  Serial.println("Realizando lectura inicial del DHT...");
+  lastTemp = dht.readTemperature();
+  lastHum = dht.readHumidity();
+  
+  // Si falla la primera lectura, poner valores por defecto para no enviar NaN
+  if (isnan(lastTemp)) lastTemp = 0.0;
+  if (isnan(lastHum)) lastHum = 0.0;
 }
 
 void checkLedStatus() {
@@ -68,7 +75,6 @@ void checkLedStatus() {
     
     if (httpCode > 0) {
        String payload = http.getString();
-       // Buscamos "led":true o "led":false en la respuesta JSON
        if (payload.indexOf("\"led\":true") > 0) {
          digitalWrite(PIN_LED, HIGH); 
        } else if (payload.indexOf("\"led\":false") > 0) {
@@ -79,12 +85,21 @@ void checkLedStatus() {
   }
 }
 
-void sendSensorData() {
-  // 1. LEER TEMPERATURA Y HUMEDAD
+void readDHT() {
   float h = dht.readHumidity();
   float t = dht.readTemperature();
 
-  // 2. LEER ULTRASONICO (Distancia)
+  if (!isnan(h) && !isnan(t)) {
+    lastTemp = t;
+    lastHum = h;
+    Serial.printf("DHT Actualizado: T=%.2f H=%.2f\n", t, h);
+  } else {
+    Serial.println("Error leyendo DHT (manteniendo valores anteriores)");
+  }
+}
+
+void readDistanceAndSend() {
+  // 1. LEER ULTRASONICO (Distancia)
   digitalWrite(PIN_TRIG, LOW);
   delayMicroseconds(2);
   digitalWrite(PIN_TRIG, HIGH);
@@ -95,19 +110,13 @@ void sendSensorData() {
   float distancia = duration * 0.034 / 2; 
   if (duration == 0) distancia = 0; 
 
+  Serial.printf("Distancia: %.2f cm\n", distancia);
 
-
-  // Validar lecturas del DHT
-  if (isnan(h) || isnan(t)) {
-    Serial.println("Error leyendo DHT!");
-    return;
-  }
-
-  // 4. CONSTRUIR LA URL Y ENVIAR A RENDER
+  // 2. ENVIAR A RENDER (Usando distancia actual + últimos valores de DHT)
   if (WiFi.status() == WL_CONNECTED) {
     String url = "https://" + String(host) + "/api/log";
-    String fullRequest = url + "?temp=" + String(t) + 
-                               "&hum=" + String(h) + 
+    String fullRequest = url + "?temp=" + String(lastTemp) + 
+                               "&hum=" + String(lastHum) + 
                                "&dist=" + String(distancia);
 
     Serial.print("Enviando a Render: ");
@@ -129,16 +138,19 @@ void loop() {
   unsigned long currentMillis = millis();
 
   // --- TAREA RÁPIDA: CHECAR LED ---
-  // Hacemos esto en cada vuelta del loop, con un pequeño delay manual si se desea, 
-  // o simplemente dejamos que corra lo más rápido posible.
-  // Para no saturar, usaremos un delay pequeño al final del loop.
   checkLedStatus();
 
-  // --- TAREA LENTA: ENVIAR DATOS ---
-  if (currentMillis - lastLogTime >= logInterval) {
-    lastLogTime = currentMillis;
-    sendSensorData();
+  // --- TAREA DHT (Cada 30s) ---
+  if (currentMillis - lastDHTTime >= dhtInterval) {
+    lastDHTTime = currentMillis;
+    readDHT();
   }
 
-  delay(500); // Esperar 0.5s antes de volver a checar el LED
+  // --- TAREA DISTANCIA Y ENVÍO (Cada 5s) ---
+  if (currentMillis - lastDistTime >= distInterval) {
+    lastDistTime = currentMillis;
+    readDistanceAndSend();
+  }
+
+  delay(100); // Pequeño delay para estabilidad
 }

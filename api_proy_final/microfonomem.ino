@@ -74,7 +74,14 @@ void setup() {
 void loop() {
   // Esperar a que se presione el botón (LOW)
   if (digitalRead(BUTTON_PIN) == LOW) {
-    Serial.println("Boton presionado. Iniciando streaming...");
+    // --- DEBOUNCE (FILTRO DE RUIDO) ---
+    // Esperar 200ms y verificar si sigue presionado
+    delay(200);
+    if (digitalRead(BUTTON_PIN) != LOW) {
+      return; // Era ruido, ignorar
+    }
+
+    Serial.println("Boton presionado (confirmado). Iniciando streaming...");
     
     if (WiFi.status() == WL_CONNECTED) {
       WiFiClient client;

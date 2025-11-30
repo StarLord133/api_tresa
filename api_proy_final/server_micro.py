@@ -61,7 +61,20 @@ def upload_stream():
                     break
                 f.write(chunk)
         
-        print("Stream finalizado. Transcribiendo...")
+        print("Stream finalizado. Verificando tamaño...")
+        
+        file_size = os.path.getsize(filepath)
+        print(f"Tamaño del archivo: {file_size} bytes")
+
+        # Filtrar grabaciones muy cortas (ruido o falsos contactos)
+        # 16kHz * 2 bytes * 0.5s = ~16000 bytes. 
+        # Usaremos 4096 bytes como mínimo seguro.
+        if file_size < 4096:
+            print("Archivo muy pequeño (posible ruido), ignorando.")
+            os.remove(filepath)
+            return jsonify({"status": "ignored", "message": "Audio too short"}), 200
+
+        print("Transcribiendo...")
 
         # Transcribir con Google Speech
         with open(filepath, 'rb') as audio_file:

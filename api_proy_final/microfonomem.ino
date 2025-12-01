@@ -1,11 +1,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <driver/i2s.h>
 
 // --- CONFIGURACIÓN WIFI ---
-const char* ssid = "INFINITUM27AE";
-const char* password = "VTHHenT32t";
+const char* ssid = "Roborregos";
+const char* password = "RoBorregos2025";
 
 // --- CONFIGURACIÓN SERVIDOR PYTHON ---
 // IMPORTANTE: Cambia esto por la IP de tu PC donde corre el script Python
@@ -74,27 +75,39 @@ void setup() {
 void loop() {
   // Esperar a que se presione el botón (LOW)
   if (digitalRead(BUTTON_PIN) == LOW) {
-    // --- DEBOUNCE (FILTRO DE RUIDO) ---
-    // Esperar 200ms y verificar si sigue presionado
-    delay(200);
-    if (digitalRead(BUTTON_PIN) != LOW) {
-      return; // Era ruido, ignorar
+    // --- DEBOUNCE ROBUSTO ---
+    // Verificar que se mantenga presionado por 500ms CONTINUOS
+    unsigned long pressStart = millis();
+    bool validPress = true;
+    while (millis() - pressStart < 500) {
+      if (digitalRead(BUTTON_PIN) != LOW) {
+        validPress = false;
+        break; // Se soltó antes de tiempo
+      }
+      delay(10);
+    }
+
+    if (!validPress) {
+      return; // Fue ruido o pulsación muy corta
     }
 
     Serial.println("Boton presionado (confirmado). Iniciando streaming...");
     
     if (WiFi.status() == WL_CONNECTED) {
-      WiFiClient client;
+      // Usar WiFiClientSecure para HTTPS
+      WiFiClientSecure client;
+      client.setInsecure(); // No validar certificado (necesario para Render sin cargar CA)
       
-      // Parsear URL simple (http://IP:PORT/path)
-      // Asumimos formato http://192.168.1.XX:5001/upload_stream
-      int port = 5001;
-      String host = "192.168.1.71"; // Ajustar si cambia
+      // Configuración para Render
+      String host = "api-tresa-microfono.onrender.com";
+      int port = 443;
       String path = "/upload_stream";
       
+      Serial.println("Conectando a " + host + ":" + String(port));
+
       // Intentar conectar
       if (client.connect(host.c_str(), port)) {
-        Serial.println("Conectado al servidor Python");
+        Serial.println("Conectado al servidor Python (HTTPS)");
         
         // Enviar cabeceras HTTP para Chunked Transfer Encoding
         client.println("POST " + path + " HTTP/1.1");
@@ -136,7 +149,7 @@ void loop() {
         
         client.stop();
       } else {
-        Serial.println("Error: No se pudo conectar al servidor Python");
+        Serial.println("Error: No se pudo conectar al servidor Render");
       }
     } else {
       Serial.println("Error: WiFi desconectado");

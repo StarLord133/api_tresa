@@ -4,6 +4,7 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { RecordingsTable } from "@/components/recordings-table"
 import { AttendanceTable } from "@/components/attendance-table"
+import { RecordingControls } from "@/components/recording-controls"
 
 import { DataTable, type SensorData } from "@/components/data-table"
 import { SiteHeader } from "@/components/site-header"
@@ -60,6 +61,9 @@ export default function Page() {
                                 <div>Cargando datos...</div>
                             ) : (
                                 <>
+                                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                        <RecordingControls />
+                                    </div>
                                     <DataTable data={data} />
                                     <div className="mt-8">
                                         <h2 className="text-xl font-bold mb-4">Grabaciones de Voz</h2>

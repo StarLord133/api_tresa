@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardPage from "./app/dashboard/page";
-import ActionsPage from "./app/dashboard/actions/page";
+import ChartsPage from "./app/charts/page";
+import ExamMonitorPage from "./app/exam-monitor/page";
+
 import './App.css'
 
 function App() {
@@ -9,7 +11,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/dashboard/actions" element={<ActionsPage />} />
+        <Route path="/charts" element={<ChartsPage />} />
+        <Route path="/exam-monitor" element={<ExamMonitorPage />} />
+
       </Routes>
     </BrowserRouter>
   )

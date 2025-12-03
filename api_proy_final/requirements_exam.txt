@@ -1,0 +1,9 @@
+flask
+flask-cors
+opencv-python-headless
+ultralytics
+numpy
+requests
+google-cloud-storage
+gunicorn
+python-dotenv

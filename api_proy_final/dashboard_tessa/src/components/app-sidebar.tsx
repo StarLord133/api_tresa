@@ -1,11 +1,14 @@
 import * as React from "react"
 import {
-  IconBolt,
+
   IconDashboard,
   IconInnerShadowTop,
+  IconChartBar,
+  IconCamera,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
+import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -25,21 +28,30 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
+      title: "Registros",
       url: "/dashboard",
       icon: IconDashboard,
     },
+  ],
+  navCharts: [
     {
-      title: "Acciones",
-      url: "/dashboard/actions",
-      icon: IconBolt,
+      title: "Gráficas",
+      url: "/charts",
+      icon: IconChartBar,
+    },
+  ],
+  navExam: [
+    {
+      title: "Modo Examen",
+      url: "/exam-monitor",
+      icon: IconCamera,
     },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -57,11 +69,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <NavSecondary items={data.navCharts} />
+        <NavSecondary items={data.navExam} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
-    </Sidebar>
+    </Sidebar >
   )
 }
 

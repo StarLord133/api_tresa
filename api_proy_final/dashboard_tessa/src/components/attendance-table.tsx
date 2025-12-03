@@ -22,7 +22,7 @@ export function AttendanceTable() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:3000/api/attendance/sheet');
+                const response = await fetch('https://api-tresa.onrender.com/api/attendance/sheet');
                 if (!response.ok) {
                     throw new Error('Failed to fetch attendance data');
                 }

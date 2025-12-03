@@ -69,7 +69,7 @@ except Exception as e:
 def capture_frame():
     """Capturar frame desde ESP32-CAM"""
     try:
-        r = requests.get(CAPTURE_URL, timeout=3)
+        r = requests.get(CAPTURE_URL, timeout=30)
         if r.status_code != 200:
             return None
         
@@ -237,7 +237,7 @@ def start_exam():
     
     # Verificar conexión con ESP32
     try:
-        r = requests.get(f"http://{ESP32_IP}/", timeout=3)
+        r = requests.get(f"http://{ESP32_IP}/", timeout=30)
         if r.status_code != 200:
             return jsonify({"error": "ESP32-CAM not reachable"}), 503
     except:

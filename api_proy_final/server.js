@@ -14,7 +14,7 @@ const db = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
+    port: parseInt(process.env.DB_PORT || '3306'),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -24,6 +24,36 @@ const db = mysql.createPool({
 });
 
 console.log('Configuración de Pool MySQL lista');
+
+// --- ENDPOINT DE DIAGNÓSTICO DE BASE DE DATOS ---
+app.get('/api/db-test', (req, res) => {
+    db.getConnection((err, connection) => {
+        if (err) {
+            console.error("DB Connection Error:", err);
+            res.status(500).json({
+                status: 'error',
+                message: 'Database connection failed',
+                details: err.message,
+                code: err.code,
+                config: {
+                    host: process.env.DB_HOST,
+                    user: process.env.DB_USER,
+                    port: process.env.DB_PORT
+                }
+            });
+        } else {
+            connection.ping((pingErr) => {
+                connection.release();
+                if (pingErr) {
+                    console.error("DB Ping Error:", pingErr);
+                    res.status(500).json({ status: 'error', message: 'Database ping failed', details: pingErr.message });
+                } else {
+                    res.json({ status: 'ok', message: 'Database connection successful' });
+                }
+            });
+        }
+    });
+});
 
 // Crear tabla de grabaciones si no existe
 const createTableQuery = `

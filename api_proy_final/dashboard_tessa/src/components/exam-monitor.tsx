@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Play, Square, Camera, AlertTriangle, CheckCircle2, Eye } from 'lucide-react';
+import { Play, Square, Camera, AlertTriangle, CheckCircle2, Eye, QrCode } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api-tresa.onrender.com';
 
@@ -33,6 +33,7 @@ export function ExamMonitor() {
     const [snapshot, setSnapshot] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [attendanceActive, setAttendanceActive] = useState(false);
 
     // Polling para obtener estado del examen
     useEffect(() => {
@@ -136,6 +137,18 @@ export function ExamMonitor() {
         }
     };
 
+    const toggleAttendance = async () => {
+        try {
+            const endpoint = attendanceActive ? '/api/attendance/stop' : '/api/attendance/start';
+            const response = await fetch(`${API_URL}${endpoint}`, { method: 'POST' });
+            if (response.ok) {
+                setAttendanceActive(!attendanceActive);
+            }
+        } catch (err) {
+            console.error('Error toggling attendance:', err);
+        }
+    };
+
     const formatElapsedTime = (seconds: number) => {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
@@ -209,6 +222,17 @@ export function ExamMonitor() {
                             <Button onClick={takeSnapshot} variant="outline">
                                 <Camera className="mr-2 h-4 w-4" />
                                 Snapshot
+                            </Button>
+                        </div>
+
+                        <div className="flex gap-2 mt-4 pt-4 border-t">
+                            <Button
+                                onClick={toggleAttendance}
+                                variant={attendanceActive ? "destructive" : "secondary"}
+                                className="w-full sm:w-auto"
+                            >
+                                <QrCode className="mr-2 h-4 w-4" />
+                                {attendanceActive ? "Terminar Pase de Lista" : "Pase de Lista (QR)"}
                             </Button>
                         </div>
                     </div>

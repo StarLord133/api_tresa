@@ -34,13 +34,13 @@ const createTableQuery = `
         transcripcion TEXT
     )
 `;
-
 db.query(createTableQuery, (err) => {
     if (err) console.error("Error creando tabla grabaciones:", err);
     else console.log("Tabla 'grabaciones' verificada/creada");
 });
 
 let ledState = false; // Estado del LED (false = apagado, true = encendido)
+let showQR = false;   // Variable global para el estado del QR de asistencia
 
 // --- ENDPOINT PARA RECIBIR DATOS DEL ESP8266 ---
 // El ESP enviará los datos en la URL: /api/log?temp=XX&hum=YY&dist=ZZ
@@ -113,9 +113,11 @@ app.get('/api/latest', (req, res) => {
             res.status(500).send('Error al obtener datos');
         } else {
             if (results.length > 0) {
-                res.json(results[0]);
+                const data = results[0];
+                data.show_qr = showQR; // Agregar estado del QR
+                res.json(data);
             } else {
-                res.json({}); // Retornar objeto vacio si no hay datos
+                res.json({ show_qr: showQR }); // Retornar objeto con estado QR si no hay datos
             }
         }
     });
@@ -131,6 +133,19 @@ app.post('/api/led', (req, res) => {
     } else {
         res.status(400).json({ error: 'Formato inválido. Se espera { "state": boolean }' });
     }
+});
+
+// --- ENDPOINTS PARA PASE DE LISTA (QR) ---
+app.post('/api/attendance/start', (req, res) => {
+    showQR = true;
+    console.log('Pase de lista INICIADO (QR visible)');
+    res.json({ status: 'started', show_qr: true });
+});
+
+app.post('/api/attendance/stop', (req, res) => {
+    showQR = false;
+    console.log('Pase de lista FINALIZADO (QR oculto)');
+    res.json({ status: 'stopped', show_qr: false });
 });
 
 // --- ENDPOINT PARA GUARDAR GRABACIÓN (Desde Python) ---

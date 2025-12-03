@@ -104,7 +104,7 @@ def upload_to_gcs(image_data, filename):
     try:
         blob = bucket.blob(f"exam_incidents/{filename}")
         blob.upload_from_string(image_data, content_type='image/jpeg')
-        blob.make_public()
+        # blob.make_public() - No necesario/permitido con Uniform Bucket-Level Access
         return blob.public_url
     except Exception as e:
         print(f"Error subiendo a GCS: {e}")

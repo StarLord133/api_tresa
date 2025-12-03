@@ -72,44 +72,67 @@ void setup() {
   Serial.println("Sistema listo. Presiona el boton BOOT para grabar.");
 }
 
-void loop() {
-  // Esperar a que se presione el botón (LOW)
-  if (digitalRead(BUTTON_PIN) == LOW) {
-    // --- DEBOUNCE ROBUSTO ---
-    // Verificar que se mantenga presionado por 500ms CONTINUOS
-    unsigned long pressStart = millis();
-    bool validPress = true;
-    while (millis() - pressStart < 500) {
-      if (digitalRead(BUTTON_PIN) != LOW) {
-        validPress = false;
-        break; // Se soltó antes de tiempo
+// Función para verificar estado en el servidor
+bool checkRecordingState() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    // IMPORTANTE: Cambia esto por la URL de tu backend
+    // Si usas Render: https://api-tresa.onrender.com/api/recording/status
+    // Si es local: http://192.168.1.71:3000/api/recording/status
+    http.begin("https://api-tresa.onrender.com/api/recording/status"); 
+    
+    int httpCode = http.GET();
+    if (httpCode > 0) {
+      String payload = http.getString();
+      // Buscamos "recording":true en la respuesta JSON simple
+      if (payload.indexOf("\"recording\":true") >= 0) {
+        http.end();
+        return true;
       }
-      delay(10);
     }
+    http.end();
+  }
+  return false;
+}
 
-    if (!validPress) {
-      return; // Fue ruido o pulsación muy corta
+void loop() {
+  bool shouldRecord = false;
+
+  // 1. Verificar botón físico
+  if (digitalRead(BUTTON_PIN) == LOW) {
+    delay(50); // Debounce simple
+    if (digitalRead(BUTTON_PIN) == LOW) {
+      shouldRecord = true;
+      Serial.println("Inicio por BOTON FISICO");
     }
+  }
 
-    Serial.println("Boton presionado (confirmado). Iniciando streaming...");
+  // 2. Verificar estado remoto (Polling cada 1s si no se presionó botón)
+  if (!shouldRecord) {
+    static unsigned long lastCheck = 0;
+    if (millis() - lastCheck > 1000) {
+      lastCheck = millis();
+      if (checkRecordingState()) {
+        shouldRecord = true;
+        Serial.println("Inicio por COMANDO REMOTO");
+      }
+    }
+  }
+
+  if (shouldRecord) {
+    Serial.println("Iniciando streaming...");
     
     if (WiFi.status() == WL_CONNECTED) {
-      // Usar WiFiClientSecure para HTTPS
       WiFiClientSecure client;
-      client.setInsecure(); // No validar certificado (necesario para Render sin cargar CA)
+      client.setInsecure(); 
       
-      // Configuración para Render
       String host = "api-tresa-microfono.onrender.com";
       int port = 443;
       String path = "/upload_stream";
       
-      Serial.println("Conectando a " + host + ":" + String(port));
-
-      // Intentar conectar
       if (client.connect(host.c_str(), port)) {
-        Serial.println("Conectado al servidor Python (HTTPS)");
+        Serial.println("Conectado al servidor Python");
         
-        // Enviar cabeceras HTTP para Chunked Transfer Encoding
         client.println("POST " + path + " HTTP/1.1");
         client.println("Host: " + host);
         client.println("Content-Type: application/octet-stream");
@@ -117,44 +140,57 @@ void loop() {
         client.println("Connection: close");
         client.println();
         
-        // Bucle de grabación mientras el botón siga presionado
-        while (digitalRead(BUTTON_PIN) == LOW) {
+        // Bucle de grabación
+        // Se mantiene mientras:
+        // A) El botón esté presionado (si fue iniciado por botón)
+        // B) El estado remoto sea true (si fue iniciado remotamente o mixto)
+        // Para simplificar, verificamos ambas condiciones periódicamente
+        
+        unsigned long lastRemoteCheck = 0;
+        bool keepRecording = true;
+
+        while (keepRecording) {
           size_t bytesIn = 0;
-          // Leer del micrófono
           esp_err_t result = i2s_read(I2S_PORT, &sBuffer, bufferLen * sizeof(int16_t), &bytesIn, portMAX_DELAY);
           
           if (result == ESP_OK && bytesIn > 0) {
-            // 1. Enviar tamaño del chunk en HEX
             client.print(bytesIn, HEX);
             client.println();
-            // 2. Enviar datos crudos
             client.write((const uint8_t*)sBuffer, bytesIn);
             client.println();
           }
+
+          // Lógica de salida
+          // Si el botón está presionado, seguimos.
+          // Si NO está presionado, verificamos el estado remoto.
+          if (digitalRead(BUTTON_PIN) != LOW) {
+             // Solo verificamos remoto cada 1s para no saturar
+             if (millis() - lastRemoteCheck > 1000) {
+               lastRemoteCheck = millis();
+               if (!checkRecordingState()) {
+                 keepRecording = false; // El servidor dijo basta
+                 Serial.println("Detenido por COMANDO REMOTO");
+               }
+             }
+          }
         }
         
-        // Finalizar envío (Chunk size 0)
         client.println("0");
         client.println();
         
-        Serial.println("Boton soltado. Finalizando stream...");
-        
-        // Leer respuesta del servidor
+        // Limpiar respuesta
         while(client.connected()) {
           String line = client.readStringUntil('\n');
-          if (line == "\r") break; // Fin de headers
+          if (line == "\r") break;
         }
-        String body = client.readString();
-        Serial.println("Respuesta del servidor: " + body);
-        
         client.stop();
+        Serial.println("Streaming finalizado");
+        
       } else {
-        Serial.println("Error: No se pudo conectar al servidor Render");
+        Serial.println("Error conexión Render");
       }
-    } else {
-      Serial.println("Error: WiFi desconectado");
     }
     
-    delay(1000); // Debounce para no reiniciar inmediatamente
+    delay(1000); 
   }
 }

@@ -95,6 +95,24 @@ db.query(createTableQuery, (err) => {
 
 let ledState = false; // Estado del LED (false = apagado, true = encendido)
 let showQR = false;   // Variable global para el estado del QR de asistencia
+let recordingState = false; // Estado de grabación (false = detenido, true = grabando)
+
+// --- ENDPOINTS PARA CONTROL DE GRABACIÓN (REMOTO) ---
+app.post('/api/recording/start', (req, res) => {
+    recordingState = true;
+    console.log('Grabación INICIADA remotamente');
+    res.json({ status: 'started', recording: true });
+});
+
+app.post('/api/recording/stop', (req, res) => {
+    recordingState = false;
+    console.log('Grabación DETENIDA remotamente');
+    res.json({ status: 'stopped', recording: false });
+});
+
+app.get('/api/recording/status', (req, res) => {
+    res.json({ recording: recordingState });
+});
 
 // --- ENDPOINT PARA RECIBIR DATOS DEL ESP8266 ---
 // El ESP enviará los datos en la URL: /api/log?temp=XX&hum=YY&dist=ZZ

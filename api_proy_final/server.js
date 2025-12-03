@@ -258,8 +258,8 @@ app.post('/api/exam/start', async (req, res) => {
         const response = await axios.post(`${PYTHON_SERVER}/api/exam/start`);
         res.json(response.data);
     } catch (error) {
-        console.error('Error iniciando examen:', error.message);
-        res.status(500).json({ error: 'Failed to start exam', details: error.message });
+        console.error('Error iniciando examen:', error.response?.data || error.message || error);
+        res.status(500).json({ error: 'Failed to start exam', details: error.response?.data || error.message });
     }
 });
 
@@ -269,8 +269,8 @@ app.post('/api/exam/stop', async (req, res) => {
         const response = await axios.post(`${PYTHON_SERVER}/api/exam/stop`);
         res.json(response.data);
     } catch (error) {
-        console.error('Error deteniendo examen:', error.message);
-        res.status(500).json({ error: 'Failed to stop exam', details: error.message });
+        console.error('Error deteniendo examen:', error.response?.data || error.message || error);
+        res.status(500).json({ error: 'Failed to stop exam', details: error.response?.data || error.message });
     }
 });
 
@@ -280,8 +280,8 @@ app.get('/api/exam/status', async (req, res) => {
         const response = await axios.get(`${PYTHON_SERVER}/api/exam/status`);
         res.json(response.data);
     } catch (error) {
-        console.error('Error obteniendo estado:', error.message);
-        res.status(500).json({ error: 'Failed to get exam status', details: error.message });
+        console.error('Error obteniendo estado:', error.response?.data || error.message || error);
+        res.status(500).json({ error: 'Failed to get exam status', details: error.response?.data || error.message });
     }
 });
 
@@ -291,8 +291,8 @@ app.get('/api/exam/snapshot', async (req, res) => {
         const response = await axios.get(`${PYTHON_SERVER}/api/exam/snapshot`);
         res.json(response.data);
     } catch (error) {
-        console.error('Error obteniendo snapshot:', error.message);
-        res.status(500).json({ error: 'Failed to get snapshot', details: error.message });
+        console.error('Error obteniendo snapshot:', error.response?.data || error.message || error);
+        res.status(500).json({ error: 'Failed to get snapshot', details: error.response?.data || error.message });
     }
 });
 

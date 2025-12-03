@@ -171,6 +171,8 @@ app.get('/api/led', (req, res) => {
 
 const PYTHON_SERVER = process.env.PYTHON_SERVER_URL || 'http://localhost:5001';
 
+console.log('🔗 PYTHON_SERVER configurado como:', PYTHON_SERVER);
+
 // --- TABLA PARA ALERTAS DE EXAMEN ---
 const createExamAlertsTable = `
     CREATE TABLE IF NOT EXISTS exam_alerts (
@@ -255,7 +257,7 @@ app.patch('/api/exam-alerts/:id/review', (req, res) => {
 // Iniciar examen
 app.post('/api/exam/start', async (req, res) => {
     try {
-        const response = await axios.post(`${PYTHON_SERVER}/api/exam/start`);
+        const response = await axios.post(`${PYTHON_SERVER}/api/exam/start`, {}, { timeout: 60000 });
         res.json(response.data);
     } catch (error) {
         console.error('Error iniciando examen:', error.response?.data || error.message || error);
@@ -266,7 +268,7 @@ app.post('/api/exam/start', async (req, res) => {
 // Detener examen
 app.post('/api/exam/stop', async (req, res) => {
     try {
-        const response = await axios.post(`${PYTHON_SERVER}/api/exam/stop`);
+        const response = await axios.post(`${PYTHON_SERVER}/api/exam/stop`, {}, { timeout: 60000 });
         res.json(response.data);
     } catch (error) {
         console.error('Error deteniendo examen:', error.response?.data || error.message || error);
@@ -277,7 +279,7 @@ app.post('/api/exam/stop', async (req, res) => {
 // Obtener estado del examen
 app.get('/api/exam/status', async (req, res) => {
     try {
-        const response = await axios.get(`${PYTHON_SERVER}/api/exam/status`);
+        const response = await axios.get(`${PYTHON_SERVER}/api/exam/status`, { timeout: 60000 });
         res.json(response.data);
     } catch (error) {
         console.error('Error obteniendo estado:', error.response?.data || error.message || error);
@@ -288,7 +290,7 @@ app.get('/api/exam/status', async (req, res) => {
 // Obtener snapshot de la cámara
 app.get('/api/exam/snapshot', async (req, res) => {
     try {
-        const response = await axios.get(`${PYTHON_SERVER}/api/exam/snapshot`);
+        const response = await axios.get(`${PYTHON_SERVER}/api/exam/snapshot`, { timeout: 60000 });
         res.json(response.data);
     } catch (error) {
         console.error('Error obteniendo snapshot:', error.response?.data || error.message || error);

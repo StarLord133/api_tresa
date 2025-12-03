@@ -23,7 +23,14 @@ CORS(app)
 
 # CONFIGURACIÓN
 ESP32_IP = os.getenv("ESP32_IP", "192.168.0.139")
-CAPTURE_URL = f"http://{ESP32_IP}/capture"
+
+# Determinar URL base correcta
+if ESP32_IP.startswith("http://") or ESP32_IP.startswith("https://"):
+    BASE_ESP32_URL = ESP32_IP
+else:
+    BASE_ESP32_URL = f"http://{ESP32_IP}"
+
+CAPTURE_URL = f"{BASE_ESP32_URL}/capture"
 CONFIDENCE = float(os.getenv("CONFIDENCE", "0.45"))
 NODE_BACKEND = os.getenv("NODE_BACKEND_URL", "https://api-tresa.onrender.com")
 
@@ -84,7 +91,7 @@ def capture_frame():
 def trigger_led(state):
     """Controlar LED de ESP32-CAM"""
     try:
-        requests.get(f"http://{ESP32_IP}/led?state={state}", timeout=2)
+        requests.get(f"{BASE_ESP32_URL}/led?state={state}", timeout=2)
     except:
         pass
 
@@ -237,7 +244,7 @@ def start_exam():
     
     # Verificar conexión con ESP32
     try:
-        r = requests.get(f"http://{ESP32_IP}/", timeout=30)
+        r = requests.get(f"{BASE_ESP32_URL}/", timeout=30)
         if r.status_code != 200:
             return jsonify({"error": "ESP32-CAM not reachable"}), 503
     except:

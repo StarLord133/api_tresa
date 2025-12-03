@@ -1,3 +1,4 @@
 node_modules
 .env
 google-speech-key.json
+google-credentials.json

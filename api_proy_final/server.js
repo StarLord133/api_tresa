@@ -3,10 +3,34 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const axios = require('axios');
+const { google } = require('googleapis');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json()); // Important for parsing JSON body in POST requests
+
+// --- CONFIGURACIÓN DE GOOGLE SHEETS ---
+const SPREADSHEET_ID = '1uvXarMu-joajcwosLcchwfPZO03G3tcj0IjRg69fzCU'; // ID proporcionado por el usuario
+
+let auth;
+if (process.env.GOOGLE_CREDENTIALS) {
+    // Producción (Render): Usar variable de entorno
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+} else {
+    // Desarrollo local: Usar archivo
+    const KEY_FILE_PATH = path.join(__dirname, 'google-credentials.json');
+    auth = new google.auth.GoogleAuth({
+        keyFile: KEY_FILE_PATH,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+}
+
+const sheets = google.sheets({ version: 'v4', auth });
 
 // --- CONFIGURACIÓN DE LA BASE DE DATOS (MODO POOL) ---
 const db = mysql.createPool({
@@ -176,6 +200,35 @@ app.post('/api/attendance/stop', (req, res) => {
     showQR = false;
     console.log('Pase de lista FINALIZADO (QR oculto)');
     res.json({ status: 'stopped', show_qr: false });
+});
+
+// --- ENDPOINT PARA OBTENER DATOS DE GOOGLE SHEETS (ASISTENCIA) ---
+app.get('/api/attendance/sheet', async (req, res) => {
+    try {
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'Respuestas de formulario 1!A1:E100', // Ajusta el rango según necesites
+        });
+
+        const rows = response.data.values;
+        if (rows.length) {
+            // La primera fila son los encabezados
+            const headers = rows[0];
+            const data = rows.slice(1).map(row => {
+                let obj = {};
+                headers.forEach((header, index) => {
+                    obj[header] = row[index];
+                });
+                return obj;
+            });
+            res.json(data);
+        } else {
+            res.json([]);
+        }
+    } catch (error) {
+        console.error('Error fetching Google Sheet:', error);
+        res.status(500).json({ error: 'Failed to fetch attendance data', details: error.message });
+    }
 });
 
 // --- ENDPOINT PARA GUARDAR GRABACIÓN (Desde Python) ---

@@ -3,9 +3,9 @@
 import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { RecordingsTable } from "@/components/recordings-table"
+import { AttendanceTable } from "@/components/attendance-table"
 
 import { DataTable, type SensorData } from "@/components/data-table"
-import { SensorCharts } from "@/components/sensor-charts"
 import { SiteHeader } from "@/components/site-header"
 import {
     SidebarInset,
@@ -55,16 +55,18 @@ export default function Page() {
                 <div className="flex flex-1 flex-col">
                     <div className="@container/main flex flex-1 flex-col gap-2">
                         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-                            <h1 className="text-2xl font-bold">Monitor de Sensores</h1>
+                            <h1 className="text-2xl font-bold">Registros de Sensores</h1>
                             {loading ? (
                                 <div>Cargando datos...</div>
                             ) : (
                                 <>
-                                    <SensorCharts data={data} />
                                     <DataTable data={data} />
                                     <div className="mt-8">
                                         <h2 className="text-xl font-bold mb-4">Grabaciones de Voz</h2>
                                         <RecordingsTable />
+                                    </div>
+                                    <div className="mt-8">
+                                        <AttendanceTable />
                                     </div>
                                 </>
                             )}

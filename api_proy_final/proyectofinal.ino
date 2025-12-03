@@ -12,11 +12,11 @@ const char* host = "api-tresa.onrender.com";
 const int httpsPort = 443; 
 
 // --- PINES Y SENSORES (GPIOs) ---
-#define PIN_DHT 0      
+#define PIN_DHT 16 //D0     
 #define DHTTYPE DHT11
 
-#define PIN_TRIG 5     
-#define PIN_ECHO 4     
+#define PIN_TRIG 14     
+#define PIN_ECHO 2     
 
 #define PIN_LED 12 // D6
 

@@ -51,7 +51,7 @@ const columns: ColumnDef<Recording>[] = [
             const playAudio = () => {
                 // Asumimos que el servidor Python corre en el puerto 5001 y es accesible
                 // Ajusta la URL base si es necesario (e.g., si usas Render)
-                const baseUrl = "https://api-tresa-python.onrender.com"; // CAMBIAR POR TU URL DE PYTHON
+                const baseUrl = "https://api-tresa-microfono.onrender.com"; // URL actualizada
                 // O si es local: "http://localhost:5001"
 
                 // Si la URL ya viene completa, úsala. Si es relativa, concatena.

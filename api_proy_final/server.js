@@ -272,11 +272,22 @@ app.get('/api/exam-alerts', (req, res) => {
             console.error(err);
             res.status(500).send('Error obteniendo alertas');
         } else {
-            // Parsear JSON de detections
-            const parsed = results.map(alert => ({
-                ...alert,
-                detections: JSON.parse(alert.detections)
-            }));
+            // Parsear JSON de detections (si es necesario)
+            const parsed = results.map(alert => {
+                let detections = alert.detections;
+                if (typeof detections === 'string') {
+                    try {
+                        detections = JSON.parse(detections);
+                    } catch (e) {
+                        console.error('Error parsing detections JSON:', e);
+                        detections = []; // Fallback
+                    }
+                }
+                return {
+                    ...alert,
+                    detections: detections
+                };
+            });
             res.json(parsed);
         }
     });

@@ -122,13 +122,27 @@ app.get('/api/log', (req, res) => {
 
     console.log(`Recibido -> Temp: ${temp}, Hum: ${hum}, Dist: ${dist}`);
 
-    if (!temp || !hum || !dist) {
+    if (temp === undefined || hum === undefined || dist === undefined) {
         return res.status(400).send('Faltan datos');
+    }
+
+    // Convertir a números para validación
+    const numTemp = parseFloat(temp);
+    const numHum = parseFloat(hum);
+    const numDist = parseFloat(dist);
+
+    if (isNaN(numTemp) || isNaN(numHum) || isNaN(numDist)) {
+        console.error("Datos inválidos recibidos (NaN)");
+        return res.status(400).send('Datos numéricos inválidos');
+    }
+
+    if (numTemp === 0 && numHum === 0) {
+        console.warn("⚠️ ALERTA: Recibiendo 0 en Temperatura y Humedad. Posible fallo de sensor o desconexión.");
     }
 
     const query = 'INSERT INTO registros (temperatura, humedad, distancia) VALUES (?, ?, ?)';
 
-    db.query(query, [temp, hum, dist], (err, result) => {
+    db.query(query, [numTemp, numHum, numDist], (err, result) => {
         if (err) {
             console.error(err);
             res.status(500).send('Error al guardar en BD');

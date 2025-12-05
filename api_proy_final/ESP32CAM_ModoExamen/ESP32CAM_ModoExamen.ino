@@ -10,8 +10,8 @@
 // ============================
 // CONFIGURACIÓN WIFI
 // ============================
-const char* ssid     = "Roborregos";
-const char* password = "RoBorregos2025";
+const char* ssid     = "Tressa";
+const char* password = "facil138";
 
 void setup() {
   Serial.begin(115200);

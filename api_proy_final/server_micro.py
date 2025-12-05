@@ -74,26 +74,29 @@ def upload_stream():
             os.remove(filepath)
             return jsonify({"status": "ignored", "message": "Audio too short"}), 200
 
-        print("Transcribiendo...")
-
-        # Transcribir con Google Speech
-        with open(filepath, 'rb') as audio_file:
-            content = audio_file.read()
-
-        audio = speech.RecognitionAudio(content=content)
-        config = speech.RecognitionConfig(
-            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=16000,
-            language_code="es-MX",
-        )
-
-        response = speech_client.recognize(config=config, audio=audio)
-
         transcription = ""
-        for result in response.results:
-            transcription += result.alternatives[0].transcript
+        try:
+            # Transcribir con Google Speech
+            with open(filepath, 'rb') as audio_file:
+                content = audio_file.read()
 
-        print(f"Transcripción: {transcription}")
+            audio = speech.RecognitionAudio(content=content)
+            config = speech.RecognitionConfig(
+                encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+                sample_rate_hertz=16000,
+                language_code="es-MX",
+            )
+
+            response = speech_client.recognize(config=config, audio=audio)
+
+            for result in response.results:
+                transcription += result.alternatives[0].transcript
+            
+            print(f"Transcripción: {transcription}")
+
+        except Exception as trans_error:
+            print(f"⚠️ Error en transcripción: {trans_error}")
+            transcription = "[Error de Transcripción - Audio Guardado]"
 
         # Notificar al servidor Node.js
         # La URL del archivo será accesible desde este servidor Python
